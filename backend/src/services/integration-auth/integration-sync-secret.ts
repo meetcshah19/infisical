@@ -14,7 +14,7 @@ import {
   UpdateSecretCommand
 } from "@aws-sdk/client-secrets-manager";
 import { Octokit } from "@octokit/rest";
-import AWS from "aws-sdk";
+import { Parameter, SSM } from "@aws-sdk/client-ssm";
 import { AxiosError } from "axios";
 import sodium from "libsodium-wrappers";
 import isEqual from "lodash.isequal";
@@ -441,15 +441,12 @@ const syncSecretsAWSParameterStore = async ({
 }) => {
   if (!accessId) return;
 
-  AWS.config.update({
+  const ssm = new SSM({
     region: integration.region as string,
-    accessKeyId: accessId,
-    secretAccessKey: accessToken
-  });
-
-  const ssm = new AWS.SSM({
-    apiVersion: "2014-11-06",
-    region: integration.region as string
+    credentials: {
+      accessKeyId: accessId,
+      secretAccessKey: accessToken
+    }
   });
 
   const params = {
@@ -458,7 +455,7 @@ const syncSecretsAWSParameterStore = async ({
     WithDecryption: true
   };
 
-  const parameterList = (await ssm.getParametersByPath(params).promise()).Parameters;
+  const parameterList = (await ssm.getParametersByPath(params)).Parameters;
 
   const awsParameterStoreSecretsObj = (parameterList || [])
     .filter(({ Name }) => Boolean(Name))
@@ -467,7 +464,7 @@ const syncSecretsAWSParameterStore = async ({
         ...obj,
         [(secret.Name as string).substring((integration.path as string).length)]: secret
       }),
-      {} as Record<string, AWS.SSM.Parameter>
+      {} as Record<string, Parameter>
     );
 
   // Identify secrets to create
@@ -482,8 +479,7 @@ const syncSecretsAWSParameterStore = async ({
             Type: "SecureString",
             Value: secrets[key].value,
             Overwrite: true
-          })
-          .promise();
+          });
         // case: secret exists in AWS parameter store
       } else if (awsParameterStoreSecretsObj[key].Value !== secrets[key].value) {
         // case: secret value doesn't match one in AWS parameter store
@@ -494,8 +490,7 @@ const syncSecretsAWSParameterStore = async ({
             Type: "SecureString",
             Value: secrets[key].value,
             Overwrite: true
-          })
-          .promise();
+          });
       }
     })
   );
@@ -509,17 +504,10 @@ const syncSecretsAWSParameterStore = async ({
         await ssm
           .deleteParameter({
             Name: awsParameterStoreSecretsObj[key].Name as string
-          })
-          .promise();
+          });
       }
     })
   );
-
-  AWS.config.update({
-    region: undefined,
-    accessKeyId: undefined,
-    secretAccessKey: undefined
-  });
 };
 
 /**
@@ -541,12 +529,6 @@ const syncSecretsAWSSecretManager = async ({
   try {
     if (!accessId) return;
 
-    AWS.config.update({
-      region: integration.region as string,
-      accessKeyId: accessId,
-      secretAccessKey: accessToken
-    });
-
     secretsManager = new SecretsManagerClient({
       region: integration.region as string,
       credentials: {
@@ -561,7 +543,7 @@ const syncSecretsAWSSecretManager = async ({
       })
     );
 
-    let awsSecretManagerSecretObj: { [key: string]: AWS.SecretsManager } = {};
+    let awsSecretManagerSecretObj: { [key: string]: SecretsManagerClient } = {};
 
     if (awsSecretManagerSecret?.SecretString) {
       awsSecretManagerSecretObj = JSON.parse(awsSecretManagerSecret.SecretString);
@@ -575,12 +557,6 @@ const syncSecretsAWSSecretManager = async ({
         })
       );
     }
-
-    AWS.config.update({
-      region: undefined,
-      accessKeyId: undefined,
-      secretAccessKey: undefined
-    });
   } catch (err) {
     if (err instanceof ResourceNotFoundException && secretsManager) {
       await secretsManager.send(
@@ -590,11 +566,6 @@ const syncSecretsAWSSecretManager = async ({
         })
       );
     }
-    AWS.config.update({
-      region: undefined,
-      accessKeyId: undefined,
-      secretAccessKey: undefined
-    });
   }
 };
 
