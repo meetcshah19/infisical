@@ -11,11 +11,26 @@ export async function up(knex: Knex): Promise<void> {
       t.uuid("policyId").notNullable();
       t.foreign("policyId").references("id").inTable(TableName.AccessApprovalPolicy).onDelete("CASCADE");
 
-      t.uuid("privilegeId").nullable();
-      t.foreign("privilegeId").references("id").inTable(TableName.ProjectUserAdditionalPrivilege).onDelete("CASCADE");
+      t.uuid("projectUserPrivilegeId").nullable();
+      t.foreign("projectUserPrivilegeId")
+        .references("id")
+        .inTable(TableName.ProjectUserAdditionalPrivilege)
+        .onDelete("CASCADE");
 
-      t.uuid("requestedBy").notNullable();
-      t.foreign("requestedBy").references("id").inTable(TableName.ProjectMembership).onDelete("CASCADE");
+      t.uuid("groupProjectUserPrivilegeId").nullable();
+      t.foreign("groupProjectUserPrivilegeId")
+        .references("id")
+        .inTable(TableName.GroupProjectUserAdditionalPrivilege)
+        .onDelete("CASCADE");
+
+      t.uuid("requestedByUserId").notNullable();
+      t.foreign("requestedByUserId").references("id").inTable(TableName.Users).onDelete("CASCADE");
+
+      t.uuid("projectMembershipId").nullable();
+      t.foreign("projectMembershipId").references("id").inTable(TableName.ProjectMembership).onDelete("CASCADE");
+
+      t.uuid("groupMembershipId").nullable();
+      t.foreign("groupMembershipId").references("id").inTable(TableName.GroupProjectMembership).onDelete("CASCADE");
 
       // We use these values to create the actual privilege at a later point in time.
       t.boolean("isTemporary").notNullable();
@@ -31,14 +46,17 @@ export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable(TableName.AccessApprovalRequestReviewer))) {
     await knex.schema.createTable(TableName.AccessApprovalRequestReviewer, (t) => {
       t.uuid("id", { primaryKey: true }).defaultTo(knex.fn.uuid());
-      t.uuid("member").notNullable();
-      t.foreign("member").references("id").inTable(TableName.ProjectMembership).onDelete("CASCADE");
+
+      t.uuid("memberUserId").notNullable();
+      t.foreign("memberUserId").references("id").inTable(TableName.Users).onDelete("CASCADE");
+
       t.string("status").notNullable();
       t.uuid("requestId").notNullable();
       t.foreign("requestId").references("id").inTable(TableName.AccessApprovalRequest).onDelete("CASCADE");
       t.timestamps(true, true, true);
     });
   }
+
   await createOnUpdateTrigger(knex, TableName.AccessApprovalRequestReviewer);
 }
 

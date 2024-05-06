@@ -625,9 +625,9 @@ interface SecretApprovalReopened {
 interface SecretApprovalRequest {
   type: EventType.SECRET_APPROVAL_REQUEST;
   metadata: {
-    committedBy: string;
     secretApprovalRequestSlug: string;
     secretApprovalRequestId: string;
+    committedByUser?: string | null; // Needs to be nullable for backward compatibility
   };
 }
 

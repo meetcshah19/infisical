@@ -2,8 +2,11 @@ import { ForbiddenError } from "@casl/ability";
 import ms from "ms";
 
 import { ProjectMembershipRole, SecretKeyEncoding } from "@app/db/schemas";
+import { TAccessApprovalRequestDALFactory } from "@app/ee/services/access-approval-request/access-approval-request-dal";
 import { TPermissionServiceFactory } from "@app/ee/services/permission/permission-service";
 import { ProjectPermissionActions, ProjectPermissionSub } from "@app/ee/services/permission/project-permission";
+import { TSecretApprovalPolicyDALFactory } from "@app/ee/services/secret-approval-policy/secret-approval-policy-dal";
+import { TSecretApprovalRequestDALFactory } from "@app/ee/services/secret-approval-request/secret-approval-request-dal";
 import { isAtLeastAsPrivileged } from "@app/lib/casl";
 import { decryptAsymmetric, encryptAsymmetric } from "@app/lib/crypto";
 import { infisicalSymmetricDecrypt } from "@app/lib/crypto/encryption";
@@ -39,6 +42,9 @@ type TGroupProjectServiceFactoryDep = {
   projectBotDAL: TProjectBotDALFactory;
   groupDAL: Pick<TGroupDALFactory, "findOne">;
   permissionService: Pick<TPermissionServiceFactory, "getProjectPermission" | "getProjectPermissionByRole">;
+  accessApprovalRequestDAL: Pick<TAccessApprovalRequestDALFactory, "delete">;
+  secretApprovalPolicyDAL: Pick<TSecretApprovalPolicyDALFactory, "findByProjectIds">;
+  secretApprovalRequestDAL: Pick<TSecretApprovalRequestDALFactory, "delete">;
 };
 
 export type TGroupProjectServiceFactory = ReturnType<typeof groupProjectServiceFactory>;
@@ -48,6 +54,9 @@ export const groupProjectServiceFactory = ({
   groupProjectDAL,
   groupProjectMembershipRoleDAL,
   userGroupMembershipDAL,
+  secretApprovalRequestDAL,
+  secretApprovalPolicyDAL,
+  accessApprovalRequestDAL,
   projectDAL,
   projectKeyDAL,
   projectBotDAL,
@@ -277,7 +286,8 @@ export const groupProjectServiceFactory = ({
     if (!group) throw new BadRequestError({ message: `Failed to find group with slug ${groupSlug}` });
 
     const groupProjectMembership = await groupProjectDAL.findOne({ groupId: group.id, projectId: project.id });
-    if (!groupProjectMembership) throw new BadRequestError({ message: `Failed to find group with slug ${groupSlug}` });
+    if (!groupProjectMembership.id)
+      throw new BadRequestError({ message: `Failed to find group with slug ${groupSlug}` });
 
     const { permission } = await permissionService.getProjectPermission(
       actor,
@@ -289,7 +299,33 @@ export const groupProjectServiceFactory = ({
     ForbiddenError.from(permission).throwUnlessCan(ProjectPermissionActions.Delete, ProjectPermissionSub.Groups);
 
     const deletedProjectGroup = await groupProjectDAL.transaction(async (tx) => {
+      // This is group members that do not have individual access to the project (A.K.A members that don't have a normal project membership)
       const groupMembers = await userGroupMembershipDAL.findGroupMembersNotInProject(group.id, project.id, tx);
+
+      // Delete all access approvals by the group members
+
+      await accessApprovalRequestDAL.delete(
+        {
+          groupMembershipId: groupProjectMembership.id,
+          $in: {
+            requestedByUserId: groupMembers.map((member) => member.user.id)
+          }
+        },
+        tx
+      );
+
+      const secretApprovalPolicies = await secretApprovalPolicyDAL.findByProjectIds([project.id], tx);
+
+      // Delete any secret approvals by the group members
+      await secretApprovalRequestDAL.delete(
+        {
+          $in: {
+            policyId: secretApprovalPolicies.map((policy) => policy.id),
+            committerUserId: groupMembers.map((member) => member.user.id)
+          }
+        },
+        tx
+      );
 
       if (groupMembers.length) {
         await projectKeyDAL.delete(

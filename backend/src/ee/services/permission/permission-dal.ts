@@ -63,6 +63,11 @@ export const permissionDALFactory = (db: TDbClient) => {
           `${TableName.GroupProjectMembership}.id`
         )
         .leftJoin(
+          TableName.GroupProjectUserAdditionalPrivilege,
+          `${TableName.GroupProjectUserAdditionalPrivilege}.groupProjectMembershipId`,
+          `${TableName.GroupProjectMembership}.id`
+        )
+        .leftJoin(
           TableName.ProjectRoles,
           `${TableName.GroupProjectMembershipRole}.customRoleId`,
           `${TableName.ProjectRoles}.id`
@@ -77,11 +82,34 @@ export const permissionDALFactory = (db: TDbClient) => {
           db.ref("projectId").withSchema(TableName.GroupProjectMembership),
           db.ref("authEnforced").withSchema(TableName.Organization).as("orgAuthEnforced"),
           db.ref("orgId").withSchema(TableName.Project),
-          db.ref("slug").withSchema(TableName.ProjectRoles).as("customRoleSlug")
+          db.ref("slug").withSchema(TableName.ProjectRoles).as("customRoleSlug"),
+          db.ref("permissions").withSchema(TableName.ProjectRoles)
         )
-        .select("permissions");
+        .where(`${TableName.GroupProjectMembership}.projectId`, projectId)
+        .select(
+          db.ref("projectId").withSchema(TableName.GroupProjectMembership).as("groupMembershipProjectId"),
+          db.ref("id").withSchema(TableName.GroupProjectUserAdditionalPrivilege).as("userApId"),
+          db.ref("permissions").withSchema(TableName.GroupProjectUserAdditionalPrivilege).as("userApPermissions"),
+          db.ref("temporaryMode").withSchema(TableName.GroupProjectUserAdditionalPrivilege).as("userApTemporaryMode"),
+          db.ref("isTemporary").withSchema(TableName.GroupProjectUserAdditionalPrivilege).as("userApIsTemporary"),
+          db.ref("temporaryRange").withSchema(TableName.GroupProjectUserAdditionalPrivilege).as("userApTemporaryRange"),
+          db.ref("groupProjectMembershipId").withSchema(TableName.GroupProjectUserAdditionalPrivilege),
+          db
+            .ref("requestedByUserId")
+            .withSchema(TableName.GroupProjectUserAdditionalPrivilege)
+            .as("userApRequestedByUserId"),
 
-      const docs = await db(TableName.ProjectMembership)
+          db
+            .ref("temporaryAccessStartTime")
+            .withSchema(TableName.GroupProjectUserAdditionalPrivilege)
+            .as("userApTemporaryAccessStartTime"),
+          db
+            .ref("temporaryAccessEndTime")
+            .withSchema(TableName.GroupProjectUserAdditionalPrivilege)
+            .as("userApTemporaryAccessEndTime")
+        );
+
+      const projectMemberDocs = await db(TableName.ProjectMembership)
         .join(
           TableName.ProjectUserMembershipRole,
           `${TableName.ProjectUserMembershipRole}.projectMembershipId`,
@@ -127,7 +155,7 @@ export const permissionDALFactory = (db: TDbClient) => {
         );
 
       const permission = sqlNestRelationships({
-        data: docs,
+        data: projectMemberDocs,
         key: "projectId",
         parentMapper: ({ orgId, orgAuthEnforced, membershipId, membershipCreatedAt, membershipUpdatedAt }) => ({
           orgId,
@@ -194,6 +222,33 @@ export const permissionDALFactory = (db: TDbClient) => {
                     permissions: z.unknown(),
                     customRoleSlug: z.string().optional().nullable()
                   }).parse(data)
+              },
+              {
+                key: "userApId",
+                label: "additionalPrivileges" as const,
+                mapper: ({
+                  groupMembershipProjectId,
+                  groupProjectMembershipId,
+                  userApId,
+                  userApPermissions,
+                  userApRequestedByUserId,
+                  userApIsTemporary,
+                  userApTemporaryMode,
+                  userApTemporaryRange,
+                  userApTemporaryAccessEndTime,
+                  userApTemporaryAccessStartTime
+                }) => ({
+                  groupProjectMembershipId,
+                  groupMembershipProjectId,
+                  id: userApId,
+                  userId: userApRequestedByUserId,
+                  permissions: userApPermissions,
+                  temporaryRange: userApTemporaryRange,
+                  temporaryMode: userApTemporaryMode,
+                  temporaryAccessEndTime: userApTemporaryAccessEndTime,
+                  temporaryAccessStartTime: userApTemporaryAccessStartTime,
+                  isTemporary: userApIsTemporary
+                })
               }
             ]
           })
@@ -214,15 +269,24 @@ export const permissionDALFactory = (db: TDbClient) => {
             !isTemporary || (isTemporary && temporaryAccessEndTime && new Date() < temporaryAccessEndTime)
         ) ?? [];
 
-      const activeAdditionalPrivileges = permission?.[0]?.additionalPrivileges?.filter(
-        ({ isTemporary, temporaryAccessEndTime }) =>
-          !isTemporary || (isTemporary && temporaryAccessEndTime && new Date() < temporaryAccessEndTime)
-      );
+      const activeAdditionalPrivileges =
+        permission?.[0]?.additionalPrivileges?.filter(
+          ({ isTemporary, temporaryAccessEndTime }) =>
+            !isTemporary || (isTemporary && temporaryAccessEndTime && new Date() < temporaryAccessEndTime)
+        ) ?? [];
+      const activeGroupAdditionalPrivileges =
+        groupPermission?.[0]?.additionalPrivileges?.filter(
+          ({ isTemporary, temporaryAccessEndTime, groupProjectMembershipId, groupMembershipProjectId, userId: user }) =>
+            groupMembershipProjectId === projectId &&
+            !!groupProjectMembershipId &&
+            user === userId &&
+            (!isTemporary || (isTemporary && temporaryAccessEndTime && new Date() < temporaryAccessEndTime))
+        ) ?? [];
 
       return {
         ...(permission[0] || groupPermission[0]),
         roles: [...activeRoles, ...activeGroupRoles],
-        additionalPrivileges: activeAdditionalPrivileges
+        additionalPrivileges: [...activeAdditionalPrivileges, ...activeGroupAdditionalPrivileges]
       };
     } catch (error) {
       throw new DatabaseError({ error, name: "GetProjectPermission" });

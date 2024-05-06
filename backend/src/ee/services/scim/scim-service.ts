@@ -22,9 +22,12 @@ import { TProjectMembershipDALFactory } from "@app/services/project-membership/p
 import { SmtpTemplates, TSmtpService } from "@app/services/smtp/smtp-service";
 import { TUserDALFactory } from "@app/services/user/user-dal";
 
+import { TAccessApprovalRequestDALFactory } from "../access-approval-request/access-approval-request-dal";
 import { TLicenseServiceFactory } from "../license/license-service";
 import { OrgPermissionActions, OrgPermissionSubjects } from "../permission/org-permission";
 import { TPermissionServiceFactory } from "../permission/permission-service";
+import { TSecretApprovalPolicyDALFactory } from "../secret-approval-policy/secret-approval-policy-dal";
+import { TSecretApprovalRequestDALFactory } from "../secret-approval-request/secret-approval-request-dal";
 import { buildScimGroup, buildScimGroupList, buildScimUser, buildScimUserList } from "./scim-fns";
 import {
   TCreateScimGroupDTO,
@@ -64,6 +67,9 @@ type TScimServiceFactoryDep = {
   projectBotDAL: Pick<TProjectBotDALFactory, "findOne">;
   licenseService: Pick<TLicenseServiceFactory, "getPlan">;
   permissionService: Pick<TPermissionServiceFactory, "getOrgPermission">;
+  secretApprovalRequestDAL: Pick<TSecretApprovalRequestDALFactory, "delete">;
+  accessApprovalRequestDAL: Pick<TAccessApprovalRequestDALFactory, "delete">;
+  secretApprovalPolicyDAL: Pick<TSecretApprovalPolicyDALFactory, "findByProjectIds">;
   smtpService: TSmtpService;
 };
 
@@ -81,6 +87,9 @@ export const scimServiceFactory = ({
   userGroupMembershipDAL,
   projectKeyDAL,
   projectBotDAL,
+  accessApprovalRequestDAL,
+  secretApprovalRequestDAL,
+  secretApprovalPolicyDAL,
   permissionService,
   smtpService
 }: TScimServiceFactoryDep) => {
@@ -710,6 +719,9 @@ export const scimServiceFactory = ({
             userIds: toRemoveUserIds,
             userDAL,
             userGroupMembershipDAL,
+            secretApprovalPolicyDAL,
+            accessApprovalRequestDAL,
+            secretApprovalRequestDAL,
             groupProjectDAL,
             projectKeyDAL,
             tx

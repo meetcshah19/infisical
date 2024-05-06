@@ -22,6 +22,7 @@ import { dynamicSecretLeaseServiceFactory } from "@app/ee/services/dynamic-secre
 import { groupDALFactory } from "@app/ee/services/group/group-dal";
 import { groupServiceFactory } from "@app/ee/services/group/group-service";
 import { userGroupMembershipDALFactory } from "@app/ee/services/group/user-group-membership-dal";
+import { groupProjectUserAdditionalPrivilegeDALFactory } from "@app/ee/services/group-project-user-additional-privilege/group-project-user-additional-privilege-dal";
 import { identityProjectAdditionalPrivilegeDALFactory } from "@app/ee/services/identity-project-additional-privilege/identity-project-additional-privilege-dal";
 import { identityProjectAdditionalPrivilegeServiceFactory } from "@app/ee/services/identity-project-additional-privilege/identity-project-additional-privilege-service";
 import { ldapConfigDALFactory } from "@app/ee/services/ldap-config/ldap-config-dal";
@@ -217,6 +218,8 @@ export const registerRoutes = async (
   const accessApprovalPolicyApproverDAL = accessApprovalPolicyApproverDALFactory(db);
   const accessApprovalRequestReviewerDAL = accessApprovalRequestReviewerDALFactory(db);
 
+  const groupProjectUserAdditionalPrivilegeDAL = groupProjectUserAdditionalPrivilegeDALFactory(db);
+
   const sapApproverDAL = secretApprovalPolicyApproverDALFactory(db);
   const secretApprovalPolicyDAL = secretApprovalPolicyDALFactory(db);
   const secretApprovalRequestDAL = secretApprovalRequestDALFactory(db);
@@ -230,10 +233,10 @@ export const registerRoutes = async (
 
   const gitAppInstallSessionDAL = gitAppInstallSessionDALFactory(db);
   const gitAppOrgDAL = gitAppDALFactory(db);
-  const groupDAL = groupDALFactory(db);
+  const userGroupMembershipDAL = userGroupMembershipDALFactory(db);
+  const groupDAL = groupDALFactory(db, userGroupMembershipDAL);
   const groupProjectDAL = groupProjectDALFactory(db);
   const groupProjectMembershipRoleDAL = groupProjectMembershipRoleDALFactory(db);
-  const userGroupMembershipDAL = userGroupMembershipDALFactory(db);
   const secretScanningDAL = secretScanningDALFactory(db);
   const licenseDAL = licenseDALFactory(db);
   const dynamicSecretDAL = dynamicSecretDALFactory(db);
@@ -271,6 +274,7 @@ export const registerRoutes = async (
     projectMembershipDAL,
     projectEnvDAL,
     secretApprovalPolicyApproverDAL: sapApproverDAL,
+    userDAL,
     permissionService,
     secretApprovalPolicyDAL
   });
@@ -288,10 +292,13 @@ export const registerRoutes = async (
     groupDAL,
     groupProjectDAL,
     orgDAL,
+    secretApprovalPolicyDAL,
     userGroupMembershipDAL,
     projectDAL,
     projectBotDAL,
     projectKeyDAL,
+    secretApprovalRequestDAL,
+    accessApprovalRequestDAL,
     permissionService,
     licenseService
   });
@@ -299,7 +306,10 @@ export const registerRoutes = async (
     groupDAL,
     groupProjectDAL,
     groupProjectMembershipRoleDAL,
+    secretApprovalPolicyDAL,
+    secretApprovalRequestDAL,
     userGroupMembershipDAL,
+    accessApprovalRequestDAL,
     projectDAL,
     projectKeyDAL,
     projectBotDAL,
@@ -314,7 +324,10 @@ export const registerRoutes = async (
     projectDAL,
     projectMembershipDAL,
     groupDAL,
+    secretApprovalPolicyDAL,
     groupProjectDAL,
+    secretApprovalRequestDAL,
+    accessApprovalRequestDAL,
     userGroupMembershipDAL,
     projectKeyDAL,
     projectBotDAL,
@@ -327,7 +340,10 @@ export const registerRoutes = async (
     ldapGroupMapDAL,
     orgDAL,
     orgBotDAL,
+    secretApprovalPolicyDAL,
     groupDAL,
+    secretApprovalRequestDAL,
+    accessApprovalRequestDAL,
     groupProjectDAL,
     projectKeyDAL,
     projectDAL,
@@ -419,6 +435,7 @@ export const registerRoutes = async (
     projectUserMembershipRoleDAL,
     projectDAL,
     permissionService,
+    groupProjectDAL,
     projectBotDAL,
     orgDAL,
     userDAL,
@@ -599,7 +616,7 @@ export const registerRoutes = async (
     accessApprovalPolicyApproverDAL,
     permissionService,
     projectEnvDAL,
-    projectMembershipDAL,
+    userDAL,
     projectDAL
   });
 
@@ -608,6 +625,7 @@ export const registerRoutes = async (
     permissionService,
     accessApprovalRequestReviewerDAL,
     additionalPrivilegeDAL: projectUserAdditionalPrivilegeDAL,
+    groupAdditionalPrivilegeDAL: groupProjectUserAdditionalPrivilegeDAL,
     projectMembershipDAL,
     accessApprovalPolicyDAL,
     accessApprovalRequestDAL,
