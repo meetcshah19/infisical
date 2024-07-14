@@ -37,6 +37,8 @@ const getZodPrimitiveType = (type: string) => {
       return "z.string()";
     case "bytea":
       return "zodBuffer";
+    case "USER-DEFINED":
+      return "z.string()";
     default:
       throw new Error(`Invalid type: ${type}`);
   }

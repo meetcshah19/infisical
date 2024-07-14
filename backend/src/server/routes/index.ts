@@ -179,6 +179,8 @@ import { registerSecretScannerGhApp } from "../plugins/secret-scanner";
 import { registerV1Routes } from "./v1";
 import { registerV2Routes } from "./v2";
 import { registerV3Routes } from "./v3";
+import { userSecretsServiceFactory } from "@app/services/user-secrets/user-secrets-service";
+import { userSecretsDALFactory } from "@app/services/user-secrets/user-secrets-dal";
 
 export const registerRoutes = async (
   server: FastifyZodProvider,
@@ -225,6 +227,7 @@ export const registerRoutes = async (
   const secretVersionDAL = secretVersionDALFactory(db);
   const secretVersionTagDAL = secretVersionTagDALFactory(db);
   const secretBlindIndexDAL = secretBlindIndexDALFactory(db);
+  const userSecretsDAL = userSecretsDALFactory(db);
 
   const integrationDAL = integrationDALFactory(db);
   const integrationAuthDAL = integrationAuthDALFactory(db);
@@ -956,6 +959,10 @@ export const registerRoutes = async (
     userDAL
   });
 
+  const userSecretsService = userSecretsServiceFactory({
+    userSecretsDAL
+  });
+
   await superAdminService.initServerCfg();
   //
   // setup the communication with license key server
@@ -1030,7 +1037,8 @@ export const registerRoutes = async (
     projectUserAdditionalPrivilege: projectUserAdditionalPrivilegeService,
     identityProjectAdditionalPrivilege: identityProjectAdditionalPrivilegeService,
     secretSharing: secretSharingService,
-    userEngagement: userEngagementService
+    userEngagement: userEngagementService,
+    userSecrets: userSecretsService
   });
 
   const cronJobs: CronJob[] = [];
