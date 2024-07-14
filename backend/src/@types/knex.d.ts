@@ -283,7 +283,10 @@ import {
   TUsersUpdate,
   TWebhooks,
   TWebhooksInsert,
-  TWebhooksUpdate
+  TWebhooksUpdate,
+  TUserSecrets,
+  TUserSecretsInsert,
+  TUserSecretsUpdate,
 } from "@app/db/schemas";
 
 declare module "knex" {
@@ -662,5 +665,6 @@ declare module "knex/types/tables" {
       TKmsKeyVersionsInsert,
       TKmsKeyVersionsUpdate
     >;
+    [TableName.UserSecrets]: KnexOriginal.CompositeTableType<TUserSecrets, TUserSecretsInsert, TUserSecretsUpdate>;
   }
 }

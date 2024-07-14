@@ -93,3 +93,4 @@ export * from "./user-encryption-keys";
 export * from "./user-group-membership";
 export * from "./users";
 export * from "./webhooks";
+export * from "./user-secrets";
