@@ -8,9 +8,10 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import NavHeader from "@app/components/navigation/NavHeader";
-import { Button, EmptyState, IconButton, TBody, TFoot, THead, Table, TableContainer, Td, Th, Tr } from "@app/components/v2";
-import { CreateUserSecretForm } from "./components/CreateUserSecretForm";
+import { Button, EmptyState, IconButton, Table, TableContainer, TBody, Td, TFoot, Th, THead, Tr } from "@app/components/v2";
 import { useGetUserSecrets } from "@app/hooks/api/userSecrets";
+
+import { CreateUserSecretForm } from "./components/CreateUserSecretForm";
 import { UserSecretOverviewTableRow } from "./components/UserSecretOverviewTableRow";
 
 export const UserSecretsPage = () => {
@@ -23,7 +24,7 @@ export const UserSecretsPage = () => {
     <>
       <div className="container mx-auto px-6 text-mineshaft-50 dark:[color-scheme:dark]">
         <div className="relative right-5 ml-4">
-          <NavHeader pageName={"User Secrets"} />
+          <NavHeader pageName="User Secrets" />
         </div>
         <div className="space-y-8">
           <div className="mt-6">
@@ -75,27 +76,27 @@ export const UserSecretsPage = () => {
               </THead>
               <TBody>
                 {(isTableEmpty === true) && (
-                    <Tr>
-                      <Td colSpan={1}>
-                        <EmptyState
-                          title={
-                            "Let's add some secrets"
-                          }
-                          icon={faFolderBlank}
-                          iconSize="3x"
+                  <Tr>
+                    <Td colSpan={1}>
+                      <EmptyState
+                        title={
+                          "Let's add some secrets"
+                        }
+                        icon={faFolderBlank}
+                        iconSize="3x"
+                      >
+                        <Button
+                          className="mt-4"
+                          variant="outline_bg"
+                          colorSchema="primary"
+                          size="md"
+                          onClick={() => { setIsCreateUserSecretsOpen(true) }}
                         >
-                          <Button
-                            className="mt-4"
-                            variant="outline_bg"
-                            colorSchema="primary"
-                            size="md"
-                            onClick={() => { setIsCreateUserSecretsOpen(true) }}
-                          >
-                            Add Secret
-                          </Button>
-                        </EmptyState>
-                      </Td>
-                    </Tr>
+                          Add Secret
+                        </Button>
+                      </EmptyState>
+                    </Td>
+                  </Tr>
                 )}
 
                 {isSuccess === true && userSecrets.map(({ secretName, secretValue, id, secretType }) => (

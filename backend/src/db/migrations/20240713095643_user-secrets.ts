@@ -14,10 +14,13 @@ export async function up(knex: Knex): Promise<void> {
       t.uuid("orgId").notNullable();
       t.foreign("orgId").references("id").inTable(TableName.Organization).onDelete("CASCADE");
       t.text("secretValue").notNullable();
+      t.text("salt").notNullable();
+      t.text("iv").notNullable();
+      t.text("tag").notNullable();
       t.timestamps(true, true, true);
       t.enum("secretType", USER_SECRET_VALUES, {
         useNative: true,
-        enumName: 'user_secret_type',
+        enumName: "user_secret_type"
       }).notNullable();
     });
 
@@ -28,7 +31,7 @@ export async function up(knex: Knex): Promise<void> {
 
 export async function down(knex: Knex): Promise<void> {
   await knex.schema.dropTableIfExists(TableName.UserSecrets);
-  await knex.schema.raw('DROP TYPE IF EXISTS user_secret_type');
+  await knex.schema.raw("DROP TYPE IF EXISTS user_secret_type");
   await dropOnUpdateTrigger(knex, TableName.UserSecrets);
 }
 

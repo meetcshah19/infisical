@@ -1,6 +1,7 @@
+import { useState } from "react";
+
 import { Button, FormControl, Input, Modal, ModalContent, Select, SelectItem, TextArea } from "@app/components/v2";
 import { useCreateUserSecret } from "@app/hooks/api/userSecrets";
-import { useState } from "react";
 
 export const CreateUserSecretForm = (
   {
@@ -26,7 +27,7 @@ export const CreateUserSecretForm = (
   const handleSubmit = async () => {
     try {
       let secretValue;
-      switch(selectedType) {
+      switch (selectedType) {
         case "login_credentials":
           secretValue = JSON.stringify({ username, password })
           break;
@@ -45,7 +46,7 @@ export const CreateUserSecretForm = (
         secretValue,
         secretType: selectedType
       });
-      
+
       setOpen(false);
     } catch (err) {
       console.error(err);
@@ -63,25 +64,23 @@ export const CreateUserSecretForm = (
             <Input className="input" onKeyUp={(v) => { setSecretName(v.target.value) }} />
           </FormControl>
           <FormControl label="Type">
-            <>
-              <div>
-                <Select className="input" value={selectedType} onValueChange={(val) => setSelectedType(val)}>
-                  <SelectItem value="login_credentials">Login Credentials</SelectItem>
-                  <SelectItem value="note">Secure Note</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                </Select>
-              </div>
-            </>
+            <div>
+              <Select className="input" value={selectedType} onValueChange={(val) => setSelectedType(val)}>
+                <SelectItem value="login_credentials">Login Credentials</SelectItem>
+                <SelectItem value="note">Secure Note</SelectItem>
+                <SelectItem value="card">Card</SelectItem>
+              </Select>
+            </div>
           </FormControl>
         </div>
         {
           selectedType === "login_credentials" && (
             <div>
               <FormControl label="Username">
-                <Input className="input" onKeyUp={(v)=>{setUsername(v.target.value)}}/>
+                <Input className="input" onKeyUp={(v) => { setUsername(v.target.value) }} />
               </FormControl>
               <FormControl label="Password">
-                <Input className="input" type="password" onKeyUp={(v)=>{setPassword(v.target.value)}}/>
+                <Input className="input" type="password" onKeyUp={(v) => { setPassword(v.target.value) }} />
               </FormControl>
             </div>
           )
@@ -90,10 +89,10 @@ export const CreateUserSecretForm = (
           selectedType === "note" && (
             <div>
               <FormControl label="Title">
-                <TextArea className="input" onKeyUp={(v)=>{setTitle(v.target.value)}}/>
+                <TextArea className="input" onKeyUp={(v) => { setTitle(v.target.value) }} />
               </FormControl>
               <FormControl label="Content">
-                <TextArea className="input" onKeyUp={(v)=>{setContent(v.target.value)}} />
+                <TextArea className="input" onKeyUp={(v) => { setContent(v.target.value) }} />
               </FormControl>
             </div>
           )
@@ -102,13 +101,13 @@ export const CreateUserSecretForm = (
           selectedType === "card" && (
             <div>
               <FormControl label="Card Number">
-                <Input className="input" onKeyUp={(v)=>{setCardNumber(v.target.value)}}/>
+                <Input className="input" onKeyUp={(v) => { setCardNumber(v.target.value) }} />
               </FormControl>
               <FormControl label="Expiration Date">
-                <Input className="input" onKeyUp={(v)=>{setExpirationDate(v.target.value)}}/>
+                <Input className="input" onKeyUp={(v) => { setExpirationDate(v.target.value) }} />
               </FormControl>
               <FormControl label="CVV" >
-              <Input className="input" onKeyUp={(v)=>{setCvv(v.target.value)}}/>
+                <Input className="input" onKeyUp={(v) => { setCvv(v.target.value) }} />
               </FormControl>
             </div>
           )

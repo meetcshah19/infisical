@@ -15,6 +15,9 @@ export const UserSecretsSchema = z.object({
   secretName: z.string(),
   orgId: z.string().uuid(),
   secretValue: z.string(),
+  salt: z.string(),
+  iv: z.string(),
+  tag: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   secretType: z.string()

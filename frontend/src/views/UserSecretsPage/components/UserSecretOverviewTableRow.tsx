@@ -1,10 +1,18 @@
-
-import { TableContainer, Td, Tr, Button } from "@app/components/v2";
+import { DeleteActionButton } from "@app/components/dashboard/DeleteActionButton";
+import { Checkbox, TableContainer, Td, Tr, Button } from "@app/components/v2";
 import { useToggle } from "@app/hooks";
-import { faAngleUp, faEye, faEyeSlash, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faAngleUp, faEye, faEyeSlash, faKey, faDeleteLeft, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
+import { twMerge } from "tailwind-merge";
 import { DeleteUserSecretConfirmationModal } from "./DeleteUserSecretConfirmation";
+import { SecretEditRow } from "@app/views/SecretOverviewPage/components/SecretOverviewTableRow/SecretEditRow";
+import { Controller, useForm } from "react-hook-form";
+
+import { UserSecretType } from "@app/hooks/api/userSecrets/types";
+import { SecretEdit } from "./UserSecretEditRow";
+import { update } from "@app/components/utilities/intercom/intercom";
+import { useUpdateUserSecret } from "@app/hooks/api/userSecrets";
 
 
 export const UserSecretOverviewTableRow = ({
@@ -17,14 +25,23 @@ export const UserSecretOverviewTableRow = ({
     secretName: string;
     secretValue: string;
     id: string;
-    secretType: string;
+    secretType: UserSecretType;
   }
 ) => {
   const [isFormExpanded, setIsFormExpanded] = useToggle();
   const [isSecretVisible, setIsSecretVisible] = useToggle();
   const [secretValueJson, setSecretValueJson] = useState(JSON.parse(secretValue));
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
+  const { mutateAsync: updateUserSecret } = useUpdateUserSecret();  
+  const updateSecret = async (field: string, fieldValue: string) => {
+    setSecretValueJson({ ...secretValueJson, [field]: fieldValue });
+    await updateUserSecret({
+      id,
+      secretName,
+      secretValue: JSON.stringify({ ...secretValueJson, [field]: fieldValue }),
+      secretType
+    })
+  }
   const totalCols = 0;
   return (
     <>
@@ -71,13 +88,6 @@ export const UserSecretOverviewTableRow = ({
             <div
               className="ml-2 p-2"
             >
-              {/* <SecretRenameRow
-                secretKey={secretKey}
-                environments={environments}
-                secretPath={secretPath}
-                getSecretByKey={getSecretByKey}
-              /> */}
-
               <TableContainer>
                 <table className="secret-table">
                   <thead>
@@ -111,7 +121,7 @@ export const UserSecretOverviewTableRow = ({
                             {key}
                           </td>
                           <td style={{ padding: "0.5rem 1rem" }}>
-                            {isSecretVisible ? secretValueJson[key] : "********"}
+                            <SecretEdit fieldName={key} defaultValue={secretValueJson[key]} isVisible={isSecretVisible} key={key} updateSecret={updateSecret} />
                           </td>
                         </tr>
                       ))

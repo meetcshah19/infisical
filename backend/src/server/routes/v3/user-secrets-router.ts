@@ -20,6 +20,9 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
             secretName: z.string(),
             secretValue: z.string(),
             secretType: z.string(),
+            salt: z.string(),
+            iv: z.string(),
+            tag: z.string(),
           })
         ),
         400: z.string().describe("Only available for users")
@@ -52,6 +55,9 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
         secretName: z.string().trim(),
         secretValue: z.string().trim(),
         secretType: z.enum(USER_SECRET_VALUES),
+        salt: z.string(),
+        iv: z.string(),
+        tag: z.string()
       }),
       response: {
         200: z.string().describe("ok"),
@@ -60,13 +66,16 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
     },
     onRequest: verifyAuth([AuthMode.JWT]),
     handler: async (req) => {
-      const { secretName, secretValue, secretType } = req.body;
+      const { secretName, secretValue, secretType, salt, iv, tag } = req.body;
       if (req.auth.actor === ActorType.USER) {
         await server.services.userSecrets.createUserSecrets(
           req.auth.userId,
           req.auth.orgId,
           secretName,
           secretValue,
+          iv,
+          tag,
+          salt,
           secretType
         );
       } else {
@@ -94,7 +103,10 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
       body: z.object({
         secretName: z.string().trim(),
         secretValue: z.string().trim(),
-        secretType: z.enum(USER_SECRET_VALUES)
+        secretType: z.enum(USER_SECRET_VALUES),
+        salt: z.string(),
+        iv: z.string(),
+        tag: z.string()
       }),
       response: {
         200: z.string().describe("ok"),
@@ -103,7 +115,7 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
     },
     onRequest: verifyAuth([AuthMode.JWT]),
     handler: async (req) => {
-      const { secretName, secretValue, secretType } = req.body;
+      const { secretName, secretValue, secretType, iv, tag, salt } = req.body;
       logger.info(`Updating user secret with id: ${req.params.secretId}`);
       if (req.auth.actor === ActorType.USER) {
         await server.services.userSecrets.updateUserSecret(
@@ -112,7 +124,10 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
           req.params.secretId,
           secretName,
           secretValue,
-          secretType
+          secretType,
+          iv,
+          tag,
+          salt
         );
       } else {
         return "only available for users";

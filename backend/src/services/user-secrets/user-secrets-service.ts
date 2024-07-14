@@ -13,6 +13,9 @@ export const userSecretsServiceFactory = ({ userSecretsDAL }: TUserSecretsServic
     orgId: string,
     secretName: string,
     secretValue: string,
+    iv: string,
+    tag: string,
+    salt: string,
     secretType: USER_SECRET_TYPE
   ) => {
     await userSecretsDAL.create({
@@ -20,7 +23,10 @@ export const userSecretsServiceFactory = ({ userSecretsDAL }: TUserSecretsServic
       secretName,
       secretValue,
       orgId,
-      secretType
+      secretType,
+      iv,
+      tag,
+      salt
     });
   };
 
@@ -36,14 +42,20 @@ export const userSecretsServiceFactory = ({ userSecretsDAL }: TUserSecretsServic
     secretId: string,
     secretName: string,
     secretValue: string,
-    secretType: USER_SECRET_TYPE
+    secretType: USER_SECRET_TYPE,
+    iv: string,
+    tag: string,
+    salt: string
   ) => {
     await userSecretsDAL.update(
       { id: secretId, userId, orgId },
       {
         secretName,
         secretValue,
-        secretType
+        secretType,
+        iv,
+        tag,
+        salt
       }
     );
   };
